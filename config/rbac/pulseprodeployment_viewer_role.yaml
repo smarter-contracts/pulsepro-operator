@@ -1,0 +1,23 @@
+# permissions for end users to view pulseprodeployments.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: pulsepro-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pulseprodeployment-viewer-role
+rules:
+- apiGroups:
+  - pulsepro.pulsepro.io
+  resources:
+  - pulseprodeployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pulsepro.pulsepro.io
+  resources:
+  - pulseprodeployments/status
+  verbs:
+  - get

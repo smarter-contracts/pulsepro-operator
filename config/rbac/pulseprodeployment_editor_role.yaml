@@ -1,0 +1,27 @@
+# permissions for end users to edit pulseprodeployments.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: pulsepro-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pulseprodeployment-editor-role
+rules:
+- apiGroups:
+  - pulsepro.pulsepro.io
+  resources:
+  - pulseprodeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pulsepro.pulsepro.io
+  resources:
+  - pulseprodeployments/status
+  verbs:
+  - get

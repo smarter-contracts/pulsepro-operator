@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- pulsepro_v1alpha1_pulseprodeployment.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
