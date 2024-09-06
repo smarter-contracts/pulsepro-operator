@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	pulseprov1alpha1 "github.com/smarter-contrarcts/pulsepro-operator/api/v1alpha1"
+	pulseprov1alpha1 "github.com/smarter-contracts/pulsepro-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
