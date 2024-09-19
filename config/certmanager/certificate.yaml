@@ -1,0 +1,31 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    app.kubernetes.io/name: pulsepro-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: selfsigned-issuer
+  namespace: pulsepro-operator-system
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/name: certificate
+    app.kubernetes.io/instance: serving-cert
+    app.kubernetes.io/component: certificate
+    app.kubernetes.io/created-by: pulsepro-operator
+    app.kubernetes.io/part-of: pulsepro-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: webhook-server-cert
+  namespace: pulsepro-operator-system
+spec:
+  dnsNames:
+    - webhook-server.system.svc
+    - webhook-server.system.svc.cluster.local
+  secretName: webhook-server-cert
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer

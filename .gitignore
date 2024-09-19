@@ -6,6 +6,7 @@
 *.dylib
 bin/*
 Dockerfile.cross
+NOTES.md
 
 # Test binary, built with `go test -c`
 *.test
@@ -25,3 +26,5 @@ go.work
 *.swp
 *.swo
 *~
+
+examples/

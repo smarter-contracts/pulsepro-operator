@@ -1,0 +1,9 @@
+apiVersion: pulsepro.pulsepro.io/v1alpha1
+kind: PulseProRollout
+metadata:
+  labels:
+    app.kubernetes.io/name: pulsepro-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pulseprorollout-sample
+spec:
+  # TODO(user): Add fields here

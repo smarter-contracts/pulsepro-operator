@@ -1,30 +1,17 @@
-/*
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package main
 
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
+	"os/exec"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -58,14 +45,19 @@ func main() {
 		probeAddr            string
 		secureMetrics        bool
 		enableHTTP2          bool
+		enableWebhooks       bool
+		kubeContext          string // Add kubeContext flag for local development
 		tlsOpts              []func(*tls.Config)
 	)
 
+	// Define the kube-context flag and other CLI flags
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&kubeContext, "kube-context", "", "The Kubernetes context to use for local development (leave empty for in-cluster config)")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false, "Enable leader election for controller manager.")
 	flag.BoolVar(&secureMetrics, "metrics-secure", true, "Serve the metrics endpoint securely via HTTPS.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false, "Enable HTTP/2 for the metrics and webhook servers.")
+	flag.BoolVar(&enableWebhooks, "enable-webhooks", true, "Enable webhooks for the operator.")
 
 	opts := zap.Options{
 		Development: true,
@@ -132,16 +124,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Register the PulseProDeploymentReconciler with the manager
+	// Register the PulseProDeploymentReconciler with the manager and pass kubeContext
 	if err := (&controllers.PulseProDeploymentReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("PulseProDeployment"),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("PulseProDeployment"),
+		Scheme:      mgr.GetScheme(),
+		KubeContext: kubeContext,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulseProDeployment")
 		os.Exit(1)
 	}
-	// +kubebuilder:scaffold:builder
+
+	// Register webhook if enabled
+	if enableWebhooks {
+		if err = (&pulseprov1alpha1.PulseProDeployment{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "PulseProDeployment")
+			os.Exit(1)
+		}
+	} else {
+		setupLog.Info("Webhooks are disabled.")
+	}
 
 	// Add health and readiness checks
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -158,4 +160,56 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// PulseProValues holds the hostname and other relevant config
+type PulseProValues struct {
+	Midtier struct {
+		Host string `yaml:"host"`
+	} `yaml:"midtier"`
+	Vault struct {
+		Address string `yaml:"address"`
+	} `yaml:"vault"`
+	RabbitMQ struct {
+		Host string `yaml:"host"`
+	} `yaml:"rabbitmq"`
+	TimescaleDB struct {
+		Host string `yaml:"host"`
+	} `yaml:"timescaledb"`
+	Postgres struct {
+		Host string `yaml:"host"`
+	} `yaml:"postgres"`
+}
+
+// loadConfig parses the ConfigMap data into PulseProValues
+func loadConfig(data string) (*PulseProValues, error) {
+	var values PulseProValues
+	err := yaml.Unmarshal([]byte(data), &values)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse values from ConfigMap: %v", err)
+	}
+	return &values, nil
+}
+
+// checkConnectivity pings the hostnames from the values
+func checkConnectivity(values *PulseProValues) error {
+	services := map[string]string{
+		"Vault":       values.Vault.Address,
+		"MidTier":     values.Midtier.Host,
+		"RabbitMQ":    values.RabbitMQ.Host,
+		"TimescaleDB": values.TimescaleDB.Host,
+		"Postgres":    values.Postgres.Host,
+	}
+
+	for service, host := range services {
+		if host == "" {
+			return fmt.Errorf("hostname for %s is empty in the ConfigMap", service)
+		}
+		cmd := exec.Command("ping", "-c", "1", host)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to connect to %s (%s): %v", service, host, err)
+		}
+		fmt.Printf("Successfully connected to %s (%s)\n", service, host)
+	}
+	return nil
 }

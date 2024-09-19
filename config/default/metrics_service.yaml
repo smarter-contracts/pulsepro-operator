@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: pulsepro-operator
     app.kubernetes.io/managed-by: kustomize
   name: controller-manager-metrics-service
-  namespace: system
+  namespace: pulsepro-operator-system
 spec:
   ports:
   - name: https

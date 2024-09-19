@@ -5,13 +5,13 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: pulsepro-operator
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: pulsepro-operator-system
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
+  namespace: pulsepro-operator-system
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: pulsepro-operator
@@ -91,5 +91,16 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        volumeMounts:
+        - name: sops-age-key
+          mountPath: /etc/sops/age
+          readOnly: true
+        env:
+        - name: SOPS_AGE_KEY_FILE
+          value: /etc/sops/age/age-key
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: sops-age-key
+        secret:
+          secretName: sops-age-key

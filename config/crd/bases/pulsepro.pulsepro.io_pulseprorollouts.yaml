@@ -1,0 +1,70 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: pulseprorollouts.pulsepro.pulsepro.io
+spec:
+  group: pulsepro.pulsepro.io
+  names:
+    kind: PulseProRollout
+    listKind: PulseProRolloutList
+    plural: pulseprorollouts
+    singular: pulseprorollout
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: PulseProRollout is the Schema for the pulseprorollouts API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: PulseProRolloutSpec defines the desired state of PulseProRollout
+            properties:
+              category:
+                type: string
+              environments:
+                items:
+                  type: string
+                type: array
+              imageVersion:
+                type: string
+              namespace:
+                type: string
+              tags:
+                items:
+                  type: string
+                type: array
+            required:
+            - imageVersion
+            - namespace
+            type: object
+          status:
+            description: PulseProRolloutStatus defines the observed state of PulseProRollout
+            properties:
+              phase:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
